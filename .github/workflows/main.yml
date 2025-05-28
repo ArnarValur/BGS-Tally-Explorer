@@ -1,0 +1,30 @@
+name: Create release
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Copy config
+      run: cp "./config/config.template.ini" "./config/config.ini"
+
+    - name: Inject Secrets
+      run: sed -i "s/\$API_KEY_INARA/${{secrets.API_KEY_INARA}}/g" "./config/config.ini"
+
+    - name: Zip Folder
+      run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" ".editorconfig"
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ${{ github.event.repository.name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
